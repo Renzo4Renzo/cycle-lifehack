@@ -17,9 +17,18 @@ export default async function CategoryPage({
   const todayStr = formatDate(today)
   const { blocks, reminders } = await getSchedule(category, today)
 
+  const dateLabel = today.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
+
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4 pt-6">
-      <h2 className="text-xl font-semibold capitalize">{category}</h2>
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-xl font-semibold capitalize">{category}</h2>
+        <span className="text-sm font-medium text-muted-foreground">{dateLabel}</span>
+      </div>
 
       {reminders.length > 0 && (
         <section className="space-y-2">
