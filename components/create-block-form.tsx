@@ -206,15 +206,27 @@ export default function CreateBlockForm({
               <div className="flex items-center gap-2 ml-auto">
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={cycle.enabled}
                   onClick={() => toggleCycleEnabled(ci)}
-                  className={cn(
-                    "rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
-                    cycle.enabled
-                      ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
-                      : "border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-200"
-                  )}
+                  className="flex items-center gap-1.5 group"
                 >
-                  {cycle.enabled ? "Active" : "Skipped"}
+                  <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                    {cycle.enabled ? "ON" : "OFF"}
+                  </span>
+                  <span
+                    className={cn(
+                      "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
+                      cycle.enabled ? "bg-green-500" : "bg-gray-300"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform",
+                        cycle.enabled ? "translate-x-4" : "translate-x-0.5"
+                      )}
+                    />
+                  </span>
                 </button>
                 {form.cycles.length > 1 && (
                   <Button size="sm" variant="ghost" onClick={() => removeCycle(ci)}>
