@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "Read(//d/Projects/**)",
+      "Bash(npx create-next-app@latest cycle-lifehack-tmp --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(Move-Item *)"
+    ]
+  }
+}
