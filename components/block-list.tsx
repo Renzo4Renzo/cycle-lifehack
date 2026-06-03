@@ -1,27 +1,24 @@
 "use client"
 import { useState } from "react"
+import Link from "next/link"
 import { Pencil, Trash2, Plus } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { buttonVariants } from "@/components/ui/button"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import CreateBlockForm from "@/components/create-block-form"
 import { deleteBlock } from "@/lib/actions/manage-actions"
+import { cn } from "@/lib/utils"
 import type { BlockView } from "@/lib/types"
 
 export default function BlockList({ blocks }: { blocks: BlockView[] }) {
-  const [dialogBlock, setDialogBlock] = useState<BlockView | null | "new">(null)
   const [deleteTarget, setDeleteTarget] = useState<BlockView | null>(null)
-
-  const isOpen = dialogBlock !== null
-  const editBlock = dialogBlock === "new" ? undefined : (dialogBlock ?? undefined)
 
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <Button onClick={() => setDialogBlock("new")}>
+        <Link href="/manage/blocks/new" className={cn(buttonVariants())}>
           <Plus className="h-4 w-4 mr-1" /> Add block
-        </Button>
+        </Link>
       </div>
 
       {blocks.length === 0 && (
@@ -47,26 +44,18 @@ export default function BlockList({ blocks }: { blocks: BlockView[] }) {
             </Badge>
           </div>
           <div className="flex items-center gap-1">
-            <Button size="sm" variant="ghost" onClick={() => setDialogBlock(block)}>
+            <Link
+              href={`/manage/blocks/${block.id}/edit`}
+              className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+            >
               <Pencil className="h-4 w-4" />
-            </Button>
+            </Link>
             <Button size="sm" variant="ghost" onClick={() => setDeleteTarget(block)}>
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>
         </div>
       ))}
-
-      <Dialog open={isOpen} onOpenChange={(o) => { if (!o) setDialogBlock(null) }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{dialogBlock === "new" ? "New block" : "Edit block"}</DialogTitle>
-          </DialogHeader>
-          {isOpen && (
-            <CreateBlockForm block={editBlock} onDone={() => setDialogBlock(null)} />
-          )}
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}>
         <AlertDialogContent>

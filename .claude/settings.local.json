@@ -5,7 +5,10 @@
       "Read(//d/Projects/**)",
       "Bash(npx create-next-app@latest cycle-lifehack-tmp --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
       "PowerShell(Remove-Item *)",
-      "PowerShell(Move-Item *)"
+      "PowerShell(Move-Item *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }
