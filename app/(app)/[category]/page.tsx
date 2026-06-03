@@ -21,6 +21,7 @@ export default async function CategoryPage({
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   })
 
   return (

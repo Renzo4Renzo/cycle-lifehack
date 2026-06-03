@@ -1,16 +1,28 @@
 "use client"
 import { useEffect } from "react"
 
-// Sets a 'tz' cookie so the server knows the browser's local timezone.
-// Reloads once on first visit so the very first server render uses the correct date.
+// The browser computes today's date in its local timezone and writes it as a
+// cookie. The server reads that string directly — no timezone math needed.
+// Reloads when the stored date doesn't match (first visit, or date rolled over).
 export default function TzSync() {
   useEffect(() => {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
-    const existing = document.cookie.split("; ").find((r) => r.startsWith("tz="))?.split("=")[1]
-    if (existing !== tz) {
-      document.cookie = `tz=${encodeURIComponent(tz)}; path=/; max-age=${365 * 24 * 60 * 60}`
-      if (!existing) window.location.reload()
+    const d = new Date()
+    const localDate = [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, "0"),
+      String(d.getDate()).padStart(2, "0"),
+    ].join("-")
+
+    const existing = document.cookie
+      .split("; ")
+      .find((r) => r.startsWith("local-date="))
+      ?.split("=")[1]
+
+    if (existing !== localDate) {
+      document.cookie = `local-date=${localDate}; path=/; max-age=86400`
+      window.location.reload()
     }
   }, [])
+
   return null
 }

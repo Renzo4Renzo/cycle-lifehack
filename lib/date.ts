@@ -11,14 +11,11 @@ export async function getToday(): Promise<Date> {
     if (testDate?.value) return new Date(testDate.value + "T00:00:00.000Z")
   }
 
-  // Use the browser's timezone (set by TzSync component) so the date is
-  // always correct for the user's local time, not the server's UTC clock.
-  const tz = cookieStore.get("tz")?.value
-  if (tz) {
-    // en-CA locale returns YYYY-MM-DD, which is what we need for string comparisons
-    const localDateStr = new Date().toLocaleDateString("en-CA", { timeZone: decodeURIComponent(tz) })
-    return new Date(localDateStr + "T00:00:00.000Z")
-  }
+  // The browser writes its local date as YYYY-MM-DD via TzSync.
+  // Treat it as midnight UTC so formatDate() always returns the same string.
+  const localDate = cookieStore.get("local-date")?.value
+  if (localDate) return new Date(localDate + "T00:00:00.000Z")
 
+  // Fallback: server UTC (only hits on the very first render before TzSync fires)
   return new Date()
 }
