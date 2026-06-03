@@ -7,23 +7,20 @@ import type { BlockState } from "@/lib/types"
 
 async function fetchState(blockId: string): Promise<BlockState> {
   const db = supabaseServer()
-  const { data, error } = await db
-    .from("block_state")
-    .select("*")
-    .eq("block_id", blockId)
-    .single()
+  const { data, error } = await db.from("block_state").select("*").eq("block_id", blockId).single()
   if (error) throw error
   return data as BlockState
 }
 
-async function fetchTotalCycles(blockId: string): Promise<number> {
+async function fetchCycles(blockId: string): Promise<{ id: string; enabled: boolean }[]> {
   const db = supabaseServer()
-  const { count, error } = await db
+  const { data, error } = await db
     .from("cycles")
-    .select("*", { count: "exact", head: true })
+    .select("id, enabled")
     .eq("block_id", blockId)
+    .order("position")
   if (error) throw error
-  return count ?? 0
+  return (data ?? []) as { id: string; enabled: boolean }[]
 }
 
 export async function addUse(blockId: string, category: string) {
@@ -40,11 +37,8 @@ export async function addUse(blockId: string, category: string) {
 
 export async function completeCycle(blockId: string, category: string) {
   const db = supabaseServer()
-  const [state, totalCycles] = await Promise.all([
-    fetchState(blockId),
-    fetchTotalCycles(blockId),
-  ])
-  const updates = advanceCycleState(state, totalCycles)
+  const [state, cycles] = await Promise.all([fetchState(blockId), fetchCycles(blockId)])
+  const updates = advanceCycleState(state, cycles)
   await db
     .from("block_state")
     .update({ ...updates, last_action_date: formatDate(await getToday()) })
@@ -54,11 +48,8 @@ export async function completeCycle(blockId: string, category: string) {
 
 export async function restoreCycle(blockId: string, category: string) {
   const db = supabaseServer()
-  const [state, totalCycles] = await Promise.all([
-    fetchState(blockId),
-    fetchTotalCycles(blockId),
-  ])
-  const updates = restoreCycleState(state, totalCycles)
+  const [state, cycles] = await Promise.all([fetchState(blockId), fetchCycles(blockId)])
+  const updates = restoreCycleState(state, cycles)
   await db
     .from("block_state")
     .update({ ...updates, last_action_date: formatDate(await getToday()) })

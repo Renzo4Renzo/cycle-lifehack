@@ -25,7 +25,7 @@ export async function getSchedule(
     await Promise.all([
       db
         .from("blocks")
-        .select("*, cycles(id,block_id,position,cycle_items(id,cycle_id,name,image_path,position)), block_state(*)")
+        .select("*, cycles(id,block_id,position,enabled,cycle_items(id,cycle_id,name,image_path,position)), block_state(*)")
         .eq("category", category)
         .order("created_at"),
       db
@@ -38,7 +38,6 @@ export async function getSchedule(
   if (blockErr) throw blockErr
   if (reminderErr) throw reminderErr
 
-  // Sort cycles and items by position
   const blocks: BlockWithData[] = (blocksRaw ?? []).map((b) => ({
     ...b,
     cycles: (b.cycles ?? [])
@@ -51,7 +50,7 @@ export async function getSchedule(
       })),
   }))
 
-  // Auto-advance overdue reminders (advance until next_due_at >= today)
+  // Auto-advance overdue reminders
   const reminders: ReminderView[] = []
   for (const r of remindersRaw ?? []) {
     const state = normaliseReminderState(r.reminder_state)
@@ -61,40 +60,30 @@ export async function getSchedule(
       nextDue = formatDate(addDays(new Date(nextDue), r.cadence_days))
     }
     if (nextDue !== state.next_due_at) {
-      await db
-        .from("reminder_state")
-        .update({ next_due_at: nextDue })
-        .eq("reminder_id", r.id)
+      await db.from("reminder_state").update({ next_due_at: nextDue }).eq("reminder_id", r.id)
       state.next_due_at = nextDue
     }
     reminders.push({ ...r, state })
   }
 
-  // Auto-advance automatic blocks that haven't been touched today
+  // Auto-advance automatic blocks
   const blockViews: BlockView[] = []
   for (const block of blocks) {
     const rawState = normaliseBlockState(block.block_state)
     if (!rawState) continue
     const state = { ...rawState }
-    const totalCycles = block.cycles.length
 
-    if (block.type === "automatic" && state.last_action_date !== todayStr && totalCycles > 0) {
+    if (block.type === "automatic" && state.last_action_date !== todayStr && block.cycles.length > 0) {
       const uses = currentUses(state)
       const newUses = uses + 1
       if (newUses >= block.max_uses) {
-        const updates = advanceCycleState(state, totalCycles)
-        await db
-          .from("block_state")
-          .update({ ...updates, last_action_date: todayStr })
-          .eq("block_id", block.id)
+        const updates = advanceCycleState(state, block.cycles)
+        await db.from("block_state").update({ ...updates, last_action_date: todayStr }).eq("block_id", block.id)
         Object.assign(state, updates, { last_action_date: todayStr })
       } else {
         const updatedUses = [...state.uses_per_cycle]
         updatedUses[state.current_cycle_idx] = newUses
-        await db
-          .from("block_state")
-          .update({ uses_per_cycle: updatedUses, last_action_date: todayStr })
-          .eq("block_id", block.id)
+        await db.from("block_state").update({ uses_per_cycle: updatedUses, last_action_date: todayStr }).eq("block_id", block.id)
         state.uses_per_cycle = updatedUses
         state.last_action_date = todayStr
       }

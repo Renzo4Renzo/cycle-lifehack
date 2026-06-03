@@ -12,7 +12,8 @@ CREATE TABLE blocks (
 CREATE TABLE cycles (
   id       uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   block_id uuid NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
-  position integer NOT NULL
+  position integer NOT NULL,
+  enabled  boolean NOT NULL DEFAULT true
 );
 
 CREATE TABLE cycle_items (

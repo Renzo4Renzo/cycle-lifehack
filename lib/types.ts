@@ -13,6 +13,7 @@ export interface Cycle {
   id: string
   block_id: string
   position: number
+  enabled: boolean
 }
 
 export interface CycleItem {

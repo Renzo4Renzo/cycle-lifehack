@@ -16,7 +16,7 @@ export async function getAllBlocks(): Promise<BlockView[]> {
   const db = supabaseServer()
   const { data, error } = await db
     .from("blocks")
-    .select("*, cycles(id,block_id,position,cycle_items(id,cycle_id,name,image_path,position)), block_state(*)")
+    .select("*, cycles(id,block_id,position,enabled,cycle_items(id,cycle_id,name,image_path,position)), block_state(*)")
     .order("created_at")
   if (error) throw error
   return (data ?? [])
@@ -43,7 +43,7 @@ export async function getBlockById(id: string): Promise<BlockView | null> {
   const db = supabaseServer()
   const { data, error } = await db
     .from("blocks")
-    .select("*, cycles(id,block_id,position,cycle_items(id,cycle_id,name,image_path,position)), block_state(*)")
+    .select("*, cycles(id,block_id,position,enabled,cycle_items(id,cycle_id,name,image_path,position)), block_state(*)")
     .eq("id", id)
     .single()
   if (error) return null

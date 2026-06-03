@@ -1,5 +1,5 @@
 "use client"
-import { useState, useTransition, useRef } from "react"
+import { useState, useTransition } from "react"
 import { Plus, Trash2, GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createBlock, updateBlock } from "@/lib/actions/manage-actions"
 import { getCategories } from "@/lib/categories"
 import { getImageUrl } from "@/lib/image"
+import { cn } from "@/lib/utils"
 import type { BlockView } from "@/lib/types"
 
 interface ItemState {
@@ -18,6 +19,8 @@ interface ItemState {
 }
 
 interface CycleState {
+  id?: string        // present when editing an existing cycle
+  enabled: boolean
   items: ItemState[]
 }
 
@@ -35,7 +38,7 @@ function defaultForm(categories: string[]): FormState {
     type: "manual",
     category: categories[0] ?? "outfits",
     maxUses: "1",
-    cycles: [{ items: [{ name: "", imagePath: null }] }],
+    cycles: [{ enabled: true, items: [{ name: "", imagePath: null }] }],
   }
 }
 
@@ -46,6 +49,8 @@ function blockToForm(block: BlockView): FormState {
     category: block.category,
     maxUses: String(block.max_uses),
     cycles: block.cycles.map((c) => ({
+      id: c.id,
+      enabled: c.enabled,
       items: c.cycle_items.map((i) => ({
         name: i.name,
         imagePath: i.image_path,
@@ -65,39 +70,43 @@ export default function CreateBlockForm({
   const categories = getCategories()
   const [form, setForm] = useState<FormState>(block ? blockToForm(block) : defaultForm(categories))
   const [isPending, startTransition] = useTransition()
-  const formRef = useRef<HTMLFormElement>(null)
 
   const setCycleItem = (ci: number, ii: number, patch: Partial<ItemState>) => {
-    setForm((f) => {
-      const cycles = f.cycles.map((c, ci2) =>
-        ci2 !== ci
-          ? c
-          : { items: c.items.map((it, ii2) => (ii2 !== ii ? it : { ...it, ...patch })) }
-      )
-      return { ...f, cycles }
-    })
+    setForm((f) => ({
+      ...f,
+      cycles: f.cycles.map((c, ci2) =>
+        ci2 !== ci ? c : { ...c, items: c.items.map((it, ii2) => (ii2 !== ii ? it : { ...it, ...patch })) }
+      ),
+    }))
+  }
+
+  const toggleCycleEnabled = (ci: number) => {
+    setForm((f) => ({
+      ...f,
+      cycles: f.cycles.map((c, i) => (i !== ci ? c : { ...c, enabled: !c.enabled })),
+    }))
   }
 
   const addItem = (ci: number) => {
-    setForm((f) => {
-      const cycles = f.cycles.map((c, ci2) =>
-        ci2 !== ci ? c : { items: [...c.items, { name: "", imagePath: null }] }
-      )
-      return { ...f, cycles }
-    })
+    setForm((f) => ({
+      ...f,
+      cycles: f.cycles.map((c, ci2) =>
+        ci2 !== ci ? c : { ...c, items: [...c.items, { name: "", imagePath: null }] }
+      ),
+    }))
   }
 
   const removeItem = (ci: number, ii: number) => {
-    setForm((f) => {
-      const cycles = f.cycles.map((c, ci2) =>
-        ci2 !== ci ? c : { items: c.items.filter((_, i) => i !== ii) }
-      )
-      return { ...f, cycles }
-    })
+    setForm((f) => ({
+      ...f,
+      cycles: f.cycles.map((c, ci2) =>
+        ci2 !== ci ? c : { ...c, items: c.items.filter((_, i) => i !== ii) }
+      ),
+    }))
   }
 
   const addCycle = () => {
-    setForm((f) => ({ ...f, cycles: [...f.cycles, { items: [{ name: "", imagePath: null }] }] }))
+    setForm((f) => ({ ...f, cycles: [...f.cycles, { enabled: true, items: [{ name: "", imagePath: null }] }] }))
   }
 
   const removeCycle = (ci: number) => {
@@ -111,14 +120,16 @@ export default function CreateBlockForm({
       fd.append("type", form.type)
       fd.append("category", form.category)
       fd.append("max_uses", form.maxUses)
-      const cyclesData = form.cycles.map((c) =>
-        ({ items: c.items.map((i) => ({ name: i.name, imagePath: i.imagePath })) })
-      )
+      const cyclesData = form.cycles.map((c) => ({
+        id: c.id,
+        enabled: c.enabled,
+        items: c.items.map((i) => ({ name: i.name, imagePath: i.imagePath })),
+      }))
       fd.append("cycles", JSON.stringify(cyclesData))
       for (let ci = 0; ci < form.cycles.length; ci++) {
         for (let ii = 0; ii < form.cycles[ci].items.length; ii++) {
-          const f = form.cycles[ci].items[ii].imageFile
-          if (f) fd.append(`image_${ci}_${ii}`, f)
+          const file = form.cycles[ci].items[ii].imageFile
+          if (file) fd.append(`image_${ci}_${ii}`, file)
         }
       }
       if (block) {
@@ -145,7 +156,7 @@ export default function CreateBlockForm({
           <Label>Type</Label>
           <Select
             value={form.type}
-            onValueChange={(v) => setForm((f) => ({ ...f, type: v as "manual" | "automatic" }))}
+            onValueChange={(v) => setForm((f) => ({ ...f, type: (v ?? f.type) as "manual" | "automatic" }))}
           >
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -182,15 +193,38 @@ export default function CreateBlockForm({
       <div className="space-y-4">
         <Label className="text-base font-semibold">Cycles</Label>
         {form.cycles.map((cycle, ci) => (
-          <div key={ci} className="rounded-lg border p-4 space-y-3">
-            <div className="flex items-center justify-between">
+          <div
+            key={ci}
+            className={cn(
+              "rounded-lg border p-4 space-y-3 transition-colors",
+              !cycle.enabled && "opacity-60 bg-muted/40"
+            )}
+          >
+            {/* Cycle header */}
+            <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-medium text-muted-foreground">Cycle {ci + 1}</span>
-              {form.cycles.length > 1 && (
-                <Button size="sm" variant="ghost" onClick={() => removeCycle(ci)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  type="button"
+                  onClick={() => toggleCycleEnabled(ci)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
+                    cycle.enabled
+                      ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                      : "border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  )}
+                >
+                  {cycle.enabled ? "Active" : "Skipped"}
+                </button>
+                {form.cycles.length > 1 && (
+                  <Button size="sm" variant="ghost" onClick={() => removeCycle(ci)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
+
+            {/* Items */}
             {cycle.items.map((item, ii) => (
               <div key={ii} className="flex items-center gap-2">
                 <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -213,8 +247,7 @@ export default function CreateBlockForm({
                     onChange={(e) => {
                       const file = e.target.files?.[0]
                       if (!file) return
-                      const previewUrl = URL.createObjectURL(file)
-                      setCycleItem(ci, ii, { imageFile: file, previewUrl })
+                      setCycleItem(ci, ii, { imageFile: file, previewUrl: URL.createObjectURL(file) })
                     }}
                   />
                   <label
@@ -231,11 +264,13 @@ export default function CreateBlockForm({
                 )}
               </div>
             ))}
+
             <Button size="sm" variant="outline" onClick={() => addItem(ci)}>
               <Plus className="h-3 w-3 mr-1" /> Add item
             </Button>
           </div>
         ))}
+
         <Button variant="outline" onClick={addCycle}>
           <Plus className="h-4 w-4 mr-1" /> Add cycle
         </Button>

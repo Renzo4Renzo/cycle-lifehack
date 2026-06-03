@@ -19,7 +19,6 @@ export default function BlockCard({
   todayStr: string
   category: string
 }) {
-  const totalCycles = block.cycles.length
   const [isPending, startTransition] = useTransition()
 
   const [opt, updateOpt] = useOptimistic<OptState, "add" | "complete" | "restore">(
@@ -34,10 +33,10 @@ export default function BlockCard({
         return { ...cur, uses_per_cycle: uses }
       }
       if (action === "complete") {
-        return { ...cur, ...advanceCycleState(cur as BlockState, totalCycles) }
+        return { ...cur, ...advanceCycleState(cur as BlockState, block.cycles) }
       }
       if (action === "restore") {
-        return { ...cur, ...restoreCycleState(cur as BlockState, totalCycles) }
+        return { ...cur, ...restoreCycleState(cur as BlockState, block.cycles) }
       }
       return cur
     }
