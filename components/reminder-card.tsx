@@ -28,9 +28,7 @@ export default function ReminderCard({
   const isDueToday = days <= 0
 
   const handleAdvance = () => {
-    const next = new Date(todayStr)
-    next.setDate(next.getDate() + reminder.cadence_days)
-    const nextStr = next.toISOString().split("T")[0]
+    const nextStr = todayStr
     startTransition(async () => {
       setOptimisticDue(nextStr)
       await advanceReminder(reminder.id, category)
@@ -57,19 +55,21 @@ export default function ReminderCard({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={isPending}
-          onClick={handleAdvance}
-        >
-          <FastForward className="h-3 w-3 mr-1" />
-          Advance
-        </Button>
+        {!isDueToday && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={isPending}
+            onClick={handleAdvance}
+          >
+            <FastForward className="h-3 w-3 mr-1" />
+            Advance
+          </Button>
+        )}
         {isDueToday && (
           <Button
             size="sm"
-            variant="ghost"
+            variant="outline"
             disabled={isPending}
             onClick={handleDelay}
           >

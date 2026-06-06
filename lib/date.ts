@@ -1,21 +1,27 @@
-// Server-only: reads cookies. Do NOT import this in client components.
+// Server-only: reads DB / cookies. Do NOT import this in client components.
 import { cookies } from "next/headers"
+import { supabaseServer } from "./supabase"
 export { formatDate, addDays, diffDays } from "./date-utils"
 
-export async function getToday(): Promise<Date> {
-  const cookieStore = await cookies()
+async function getScheduleOffsetMinutes(): Promise<number> {
+  const db = supabaseServer()
+  const { data } = await db.from("settings").select("schedule_tz_offset").single()
+  return data?.schedule_tz_offset ?? -300
+}
 
-  // Dev override
+export async function getToday(): Promise<Date> {
+  // Dev override via cookie
   if (process.env.NEXT_PUBLIC_DEV_MODE === "true") {
+    const cookieStore = await cookies()
     const testDate = cookieStore.get("test-date")
     if (testDate?.value) return new Date(testDate.value + "T00:00:00.000Z")
   }
 
-  // The browser writes its local date as YYYY-MM-DD via TzSync.
-  // Treat it as midnight UTC so formatDate() always returns the same string.
-  const localDate = cookieStore.get("local-date")?.value
-  if (localDate) return new Date(localDate + "T00:00:00.000Z")
+  const offsetMinutes = await getScheduleOffsetMinutes()
 
-  // Fallback: server UTC (only hits on the very first render before TzSync fires)
-  return new Date()
+  // Shift the current UTC instant by the user's preferred offset, then extract
+  // the Y/M/D in that shifted "local" frame and return midnight UTC of that date.
+  const now = new Date()
+  const shifted = new Date(now.getTime() + offsetMinutes * 60 * 1000)
+  return new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()))
 }

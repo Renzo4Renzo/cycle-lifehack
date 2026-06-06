@@ -1,5 +1,5 @@
 "use client"
-import { useState, useTransition } from "react"
+import { useState, useTransition, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -45,6 +45,12 @@ export default function CreateReminderForm({
     reminder ? reminderToForm(reminder) : defaultForm(categories)
   )
   const [isPending, startTransition] = useTransition()
+  const dateRef = useRef<HTMLInputElement>(null)
+
+  const toDisplay = (iso: string) => {
+    const [y, m, d] = iso.split("-")
+    return `${d}-${m}-${y.slice(2)}`
+  }
 
   const handleSubmit = () => {
     startTransition(async () => {
@@ -98,9 +104,18 @@ export default function CreateReminderForm({
       <div className="space-y-1">
         <Label>Next due date</Label>
         <Input
+          value={form.startsAt ? toDisplay(form.startsAt) : ""}
+          readOnly
+          placeholder="DD-MM-YY"
+          className="cursor-pointer"
+          onClick={() => dateRef.current?.showPicker()}
+        />
+        <input
+          ref={dateRef}
           type="date"
           value={form.startsAt}
           onChange={(e) => setForm((f) => ({ ...f, startsAt: e.target.value }))}
+          className="sr-only"
         />
       </div>
       <div className="flex justify-end gap-2">

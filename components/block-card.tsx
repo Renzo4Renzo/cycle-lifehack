@@ -1,5 +1,5 @@
 "use client"
-import { useTransition, useOptimistic } from "react"
+import { useTransition, useOptimistic, useState } from "react"
 import Image from "next/image"
 import { Plus, SkipForward, RotateCcw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -13,6 +13,7 @@ type OptState = Pick<BlockState, "current_cycle_idx" | "uses_per_cycle">
 
 export default function BlockCard({
   block,
+  todayStr,
   category,
 }: {
   block: BlockView
@@ -20,6 +21,8 @@ export default function BlockCard({
   category: string
 }) {
   const [isPending, startTransition] = useTransition()
+  const [localAdded, setLocalAdded] = useState(false)
+  const addedToday = localAdded || block.state.last_action_date === todayStr
 
   const [opt, updateOpt] = useOptimistic<OptState, "add" | "complete" | "restore">(
     {
@@ -103,8 +106,8 @@ export default function BlockCard({
             <Button
               size="sm"
               variant="outline"
-              disabled={isPending}
-              onClick={() => run("add", () => addUse(block.id, category))}
+              disabled={addedToday || isPending}
+              onClick={() => { setLocalAdded(true); run("add", () => addUse(block.id, category)) }}
             >
               <Plus className="h-3 w-3 mr-1" />
               Add

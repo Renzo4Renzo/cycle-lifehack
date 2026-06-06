@@ -8,7 +8,9 @@
       "PowerShell(Move-Item *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(dir D:Projectscycle-lifehack *)",
+      "Bash(Remove-Item *)"
     ]
   }
 }

@@ -3,6 +3,7 @@ import { getToday, formatDate } from "@/lib/date"
 import { getCategories } from "@/lib/categories"
 import BlockCard from "@/components/block-card"
 import ReminderCard from "@/components/reminder-card"
+import DateLabel from "@/components/date-label"
 import { notFound } from "next/navigation"
 
 export default async function CategoryPage({
@@ -17,18 +18,11 @@ export default async function CategoryPage({
   const todayStr = formatDate(today)
   const { blocks, reminders } = await getSchedule(category, today)
 
-  const dateLabel = today.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  })
-
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4 pt-6">
       <div className="flex items-baseline justify-between">
         <h2 className="text-xl font-semibold capitalize">{category}</h2>
-        <span className="text-sm font-medium text-muted-foreground">{dateLabel}</span>
+        <DateLabel dateStr={todayStr} className="text-sm font-medium text-muted-foreground" />
       </div>
 
       {reminders.length > 0 && (
