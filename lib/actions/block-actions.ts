@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache"
 import { supabaseServer } from "@/lib/supabase"
 import { getToday, formatDate } from "@/lib/date"
-import { advanceCycleState, currentUses, restoreCycleState } from "@/lib/cycle"
+import { advanceCycleState, restoreCycleState } from "@/lib/cycle"
 import type { BlockState } from "@/lib/types"
 
 async function fetchState(blockId: string): Promise<BlockState> {

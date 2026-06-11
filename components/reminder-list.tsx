@@ -8,7 +8,7 @@ import CreateReminderForm from "@/components/create-reminder-form"
 import { deleteReminder } from "@/lib/actions/manage-actions"
 import type { ReminderView } from "@/lib/types"
 
-export default function ReminderList({ reminders }: { reminders: ReminderView[] }) {
+export default function ReminderList({ reminders, todayStr }: { reminders: ReminderView[]; todayStr: string }) {
   const [dialogReminder, setDialogReminder] = useState<ReminderView | null | "new">(null)
   const [deleteTarget, setDeleteTarget] = useState<ReminderView | null>(null)
 
@@ -52,7 +52,7 @@ export default function ReminderList({ reminders }: { reminders: ReminderView[] 
             <DialogTitle>{dialogReminder === "new" ? "New reminder" : "Edit reminder"}</DialogTitle>
           </DialogHeader>
           {isOpen && (
-            <CreateReminderForm reminder={editReminder} onDone={() => setDialogReminder(null)} />
+            <CreateReminderForm reminder={editReminder} todayStr={todayStr} onDone={() => setDialogReminder(null)} />
           )}
         </DialogContent>
       </Dialog>

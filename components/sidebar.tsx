@@ -1,13 +1,18 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Settings } from "lucide-react"
+import { Settings, Shirt, Utensils } from "lucide-react"
 import { getCategories } from "@/lib/categories"
 import { cn } from "@/lib/utils"
 
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  outfits: <Shirt className="h-5 w-5" />,
+  food: <Utensils className="h-5 w-5" />,
+}
+
 function categoryIcon(cat: string) {
-  // Simple text label as icon fallback; real icons can be mapped here
-  return cat.slice(0, 2).toUpperCase()
+  // Known categories get a matching icon; others fall back to a text label
+  return CATEGORY_ICONS[cat] ?? cat.slice(0, 2).toUpperCase()
 }
 
 export default function Sidebar() {

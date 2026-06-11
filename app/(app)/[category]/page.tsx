@@ -5,6 +5,7 @@ import BlockCard from "@/components/block-card"
 import ReminderCard from "@/components/reminder-card"
 import DateLabel from "@/components/date-label"
 import { notFound } from "next/navigation"
+import Link from "next/link"
 
 export default async function CategoryPage({
   params,
@@ -50,9 +51,9 @@ export default async function CategoryPage({
         {blocks.length === 0 && (
           <p className="text-sm text-muted-foreground">
             No blocks yet. Add one in{" "}
-            <a href="/manage/blocks" className="underline">
+            <Link href="/manage/blocks" className="underline">
               Manage
-            </a>
+            </Link>
             .
           </p>
         )}

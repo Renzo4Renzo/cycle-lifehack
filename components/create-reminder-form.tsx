@@ -15,12 +15,12 @@ interface FormState {
   startsAt: string
 }
 
-function defaultForm(categories: string[]): FormState {
+function defaultForm(categories: string[], todayStr: string): FormState {
   return {
     name: "",
     category: categories[0] ?? "outfits",
     cadenceDays: "7",
-    startsAt: new Date().toISOString().split("T")[0],
+    startsAt: todayStr,
   }
 }
 
@@ -35,14 +35,16 @@ function reminderToForm(r: ReminderView): FormState {
 
 export default function CreateReminderForm({
   reminder,
+  todayStr,
   onDone,
 }: {
   reminder?: ReminderView
+  todayStr: string
   onDone: () => void
 }) {
   const categories = getCategories()
   const [form, setForm] = useState<FormState>(
-    reminder ? reminderToForm(reminder) : defaultForm(categories)
+    reminder ? reminderToForm(reminder) : defaultForm(categories, todayStr)
   )
   const [isPending, startTransition] = useTransition()
   const dateRef = useRef<HTMLInputElement>(null)

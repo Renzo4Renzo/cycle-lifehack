@@ -20,7 +20,7 @@ async function fetchReminderState(reminderId: string): Promise<ReminderState & {
 
 export async function advanceReminder(reminderId: string, category: string) {
   const db = supabaseServer()
-  const { cadence_days } = await fetchReminderState(reminderId)
+  await fetchReminderState(reminderId)
   const today = await getToday()
   const nextDue = formatDate(today)
   await db

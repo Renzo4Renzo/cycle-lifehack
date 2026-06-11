@@ -3,12 +3,6 @@ import { useState, useRef, useEffect } from "react"
 import { CalendarDays } from "lucide-react"
 import { snapshotState, restoreState } from "@/lib/actions/sandbox-actions"
 
-function localDateString(): string {
-  const d = new Date()
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
 function readCookieDate(): string | null {
   const match = document.cookie.match(/(?:^|;\s*)test-date=([^;]+)/)
   return match ? match[1] : null
@@ -19,18 +13,20 @@ function toDisplay(iso: string) {
   return `${d}-${m}-${y.slice(2)}`
 }
 
-export default function DevTimeTravel() {
-  if (process.env.NEXT_PUBLIC_DEV_MODE !== "true") return null
-
+export default function DevTimeTravel({ todayStr }: { todayStr: string }) {
   const [date, setDate] = useState<string | null>(null)
   const [isSandbox, setIsSandbox] = useState(false)
   const [busy, setBusy] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    setDate(readCookieDate() ?? localDateString())
+    // Reads browser-only storage (cookie/localStorage) to hydrate state after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDate(readCookieDate() ?? todayStr)
     setIsSandbox(localStorage.getItem("sandbox-snapshot") !== null)
-  }, [])
+  }, [todayStr])
+
+  if (process.env.NEXT_PUBLIC_DEV_MODE !== "true") return null
 
   const applyDate = async () => {
     if (!date || busy) return
@@ -43,6 +39,8 @@ export default function DevTimeTravel() {
     window.location.reload()
   }
 
+  const openPicker = () => inputRef.current?.showPicker()
+
   const resetDate = async () => {
     if (busy) return
     setBusy(true)
@@ -52,13 +50,13 @@ export default function DevTimeTravel() {
       localStorage.removeItem("sandbox-snapshot")
     }
     document.cookie = "test-date=; path=/; max-age=0"
-    setDate(localDateString())
+    setDate(todayStr)
     window.location.reload()
   }
 
   return (
     <div
-      className={`fixed bottom-20 right-3 z-50 flex items-center gap-2 rounded-xl border px-3 py-2 shadow-lg text-xs md:bottom-4 ${
+      className={`fixed bottom-20 right-4 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg text-sm md:bottom-4 ${
         isSandbox
           ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30"
           : "border bg-card"
@@ -69,11 +67,14 @@ export default function DevTimeTravel() {
           SANDBOX
         </span>
       )}
-      <CalendarDays
-        className="h-4 w-4 cursor-pointer text-muted-foreground"
-        onClick={() => inputRef.current?.showPicker()}
-      />
-      <span className="w-16 tabular-nums">{date ? toDisplay(date) : ""}</span>
+      <button
+        type="button"
+        onClick={openPicker}
+        className="flex items-center gap-2 cursor-pointer"
+      >
+        <CalendarDays className="h-5 w-5 text-muted-foreground" />
+        <span className="w-20 tabular-nums">{date ? toDisplay(date) : ""}</span>
+      </button>
       <input
         ref={inputRef}
         type="date"
@@ -84,14 +85,14 @@ export default function DevTimeTravel() {
       <button
         onClick={applyDate}
         disabled={busy}
-        className="rounded bg-primary px-2 py-0.5 text-primary-foreground disabled:opacity-50"
+        className="rounded-lg bg-primary px-3 py-1.5 font-medium text-primary-foreground disabled:opacity-50"
       >
         {busy ? "..." : "Set"}
       </button>
       <button
         onClick={resetDate}
         disabled={busy}
-        className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+        className="text-base text-muted-foreground hover:text-foreground disabled:opacity-50"
       >
         ↺
       </button>

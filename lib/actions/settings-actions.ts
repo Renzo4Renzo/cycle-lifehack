@@ -8,5 +8,5 @@ export async function saveScheduleTimezone(offsetMinutes: number) {
     .from("settings")
     .upsert({ id: 1, schedule_tz_offset: offsetMinutes })
   if (error) throw error
-  revalidatePath("/manage/timezone")
+  revalidatePath("/", "layout")
 }

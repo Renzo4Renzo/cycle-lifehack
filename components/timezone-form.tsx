@@ -2,7 +2,9 @@
 import { useState, useTransition } from "react"
 import { TZ_OFFSETS } from "@/lib/tz-offsets"
 import { saveScheduleTimezone } from "@/lib/actions/settings-actions"
+import { formatDate, shiftedTodayUTC } from "@/lib/date-utils"
 import { Button } from "@/components/ui/button"
+import DateLabel from "@/components/date-label"
 import {
   Select,
   SelectContent,
@@ -15,6 +17,7 @@ export default function TimezoneForm({ currentOffset }: { currentOffset: number 
 
   const selectedTz = TZ_OFFSETS.find((tz) => String(tz.minutes) === selected)
   const displayLabel = selectedTz ? `${selectedTz.label} — ${selectedTz.cities}` : selected
+  const previewDateStr = formatDate(shiftedTodayUTC(Number(selected)))
   const [saved, setSaved] = useState(false)
   const [isPending, startTransition] = useTransition()
 
@@ -35,7 +38,7 @@ export default function TimezoneForm({ currentOffset }: { currentOffset: number 
 
       <div className="space-y-2">
         <label className="text-sm font-medium">Schedule timezone</label>
-        <Select value={selected} onValueChange={(v) => { setSelected(v); setSaved(false) }}>
+        <Select value={selected} onValueChange={(v) => { if (v) { setSelected(v); setSaved(false) } }}>
           <SelectTrigger className="w-full">
             <span>{displayLabel}</span>
           </SelectTrigger>
@@ -48,6 +51,9 @@ export default function TimezoneForm({ currentOffset }: { currentOffset: number 
             ))}
           </SelectContent>
         </Select>
+        <p className="text-sm text-muted-foreground">
+          Today in this timezone: <DateLabel dateStr={previewDateStr} className="font-medium text-foreground" />
+        </p>
       </div>
 
       <Button

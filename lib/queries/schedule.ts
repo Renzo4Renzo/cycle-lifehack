@@ -1,8 +1,8 @@
 "use server"
 import { supabaseServer } from "@/lib/supabase"
-import { formatDate, addDays } from "@/lib/date"
-import { advanceCycleState, currentUses } from "@/lib/cycle"
-import type { BlockView, ReminderView, BlockWithData, ReminderWithState, BlockState, ReminderState } from "@/lib/types"
+import { formatDate, addDays, diffDays } from "@/lib/date"
+import { advanceAutoBlockDay, retreatAutoBlockDay } from "@/lib/cycle"
+import type { BlockView, ReminderView, BlockWithData, BlockState, ReminderState } from "@/lib/types"
 
 function normaliseBlockState(raw: BlockState | BlockState[] | null): BlockState | null {
   if (!raw) return null
@@ -74,19 +74,29 @@ export async function getSchedule(
     const state = { ...rawState }
 
     if (block.type === "automatic" && state.last_action_date !== todayStr && block.cycles.length > 0) {
-      const uses = currentUses(state)
-      const newUses = uses + 1
-      if (newUses >= block.max_uses) {
-        const updates = advanceCycleState(state, block.cycles)
-        await db.from("block_state").update({ ...updates, last_action_date: todayStr }).eq("block_id", block.id)
-        Object.assign(state, updates, { last_action_date: todayStr })
+      // Replay one day's progression per day of difference from the persisted
+      // anchor, forward or backward, so jumping to any date (e.g. dev
+      // time-travel) lands on the same cycle as visiting each day in between
+      // — and is fully reversible (no drift when jumping back and forth).
+      const daysPassed = state.last_action_date === null
+        ? 1
+        : diffDays(new Date(state.last_action_date), today)
+
+      if (daysPassed > 0) {
+        for (let i = 0; i < daysPassed; i++) {
+          Object.assign(state, advanceAutoBlockDay(state, block.cycles, block.max_uses))
+        }
       } else {
-        const updatedUses = [...state.uses_per_cycle]
-        updatedUses[state.current_cycle_idx] = newUses
-        await db.from("block_state").update({ uses_per_cycle: updatedUses, last_action_date: todayStr }).eq("block_id", block.id)
-        state.uses_per_cycle = updatedUses
-        state.last_action_date = todayStr
+        for (let i = 0; i < -daysPassed; i++) {
+          Object.assign(state, retreatAutoBlockDay(state, block.cycles, block.max_uses))
+        }
       }
+      state.last_action_date = todayStr
+      await db.from("block_state").update({
+        current_cycle_idx: state.current_cycle_idx,
+        uses_per_cycle: state.uses_per_cycle,
+        last_action_date: todayStr,
+      }).eq("block_id", block.id)
     }
 
     blockViews.push({ ...block, state })

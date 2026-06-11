@@ -32,6 +32,43 @@ export function advanceCycleState(
   return { current_cycle_idx: next, uses_per_cycle: uses }
 }
 
+// Apply one day's worth of automatic-block progression: record a use of the
+// current cycle, advancing to the next enabled cycle once max_uses is reached.
+export function advanceAutoBlockDay(
+  state: BlockState,
+  cycles: { enabled: boolean }[],
+  maxUses: number
+): Pick<BlockState, "current_cycle_idx" | "uses_per_cycle"> {
+  const newUses = currentUses(state) + 1
+  if (newUses >= maxUses) return advanceCycleState(state, cycles)
+
+  const usesPerCycle = [...state.uses_per_cycle]
+  usesPerCycle[state.current_cycle_idx] = newUses
+  return { current_cycle_idx: state.current_cycle_idx, uses_per_cycle: usesPerCycle }
+}
+
+// Inverse of advanceAutoBlockDay: undo one day's worth of progression.
+export function retreatAutoBlockDay(
+  state: BlockState,
+  cycles: { enabled: boolean }[],
+  maxUses: number
+): Pick<BlockState, "current_cycle_idx" | "uses_per_cycle"> {
+  if (currentUses(state) > 0) {
+    const usesPerCycle = [...state.uses_per_cycle]
+    usesPerCycle[state.current_cycle_idx] -= 1
+    return { current_cycle_idx: state.current_cycle_idx, uses_per_cycle: usesPerCycle }
+  }
+
+  if (!cycles.some((c) => c.enabled)) {
+    return { current_cycle_idx: state.current_cycle_idx, uses_per_cycle: state.uses_per_cycle }
+  }
+
+  const prev = restoreCycleState(state, cycles).current_cycle_idx
+  const usesPerCycle = [...state.uses_per_cycle]
+  usesPerCycle[prev] = maxUses - 1
+  return { current_cycle_idx: prev, uses_per_cycle: usesPerCycle }
+}
+
 // Scan backward from current position for the previous enabled cycle.
 // If none behind, wrap to the end.
 export function restoreCycleState(

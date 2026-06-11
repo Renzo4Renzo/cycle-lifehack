@@ -13,3 +13,9 @@ export function addDays(date: Date, days: number): Date {
 export function diffDays(from: Date, to: Date): number {
   return Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24))
 }
+
+// Midnight UTC of "today" as seen from a fixed UTC offset (in minutes).
+export function shiftedTodayUTC(offsetMinutes: number, nowMs: number = Date.now()): Date {
+  const shifted = new Date(nowMs + offsetMinutes * 60 * 1000)
+  return new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()))
+}

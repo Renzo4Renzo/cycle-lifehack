@@ -1,15 +1,17 @@
 // Server-only: reads DB / cookies. Do NOT import this in client components.
+import { cache } from "react"
 import { cookies } from "next/headers"
 import { supabaseServer } from "./supabase"
+import { shiftedTodayUTC } from "./date-utils"
 export { formatDate, addDays, diffDays } from "./date-utils"
 
-async function getScheduleOffsetMinutes(): Promise<number> {
+export const getScheduleOffsetMinutes = cache(async (): Promise<number> => {
   const db = supabaseServer()
   const { data } = await db.from("settings").select("schedule_tz_offset").single()
   return data?.schedule_tz_offset ?? -300
-}
+})
 
-export async function getToday(): Promise<Date> {
+export const getToday = cache(async (): Promise<Date> => {
   // Dev override via cookie
   if (process.env.NEXT_PUBLIC_DEV_MODE === "true") {
     const cookieStore = await cookies()
@@ -18,10 +20,5 @@ export async function getToday(): Promise<Date> {
   }
 
   const offsetMinutes = await getScheduleOffsetMinutes()
-
-  // Shift the current UTC instant by the user's preferred offset, then extract
-  // the Y/M/D in that shifted "local" frame and return midnight UTC of that date.
-  const now = new Date()
-  const shifted = new Date(now.getTime() + offsetMinutes * 60 * 1000)
-  return new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()))
-}
+  return shiftedTodayUTC(offsetMinutes)
+})

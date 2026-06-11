@@ -33,7 +33,7 @@ export async function restoreState(snapshotJson: string): Promise<void> {
     throw new Error("sandbox-actions: invalid snapshot JSON")
   }
 
-  const ops: Promise<unknown>[] = []
+  const ops: PromiseLike<unknown>[] = []
 
   if (payload.blockStates.length > 0) {
     ops.push(
