@@ -11,7 +11,10 @@
       "Bash(git push *)",
       "Bash(dir D:Projectscycle-lifehack *)",
       "Bash(Remove-Item *)",
-      "Bash(grep -E '\\\\.\\(ts|tsx|sql|prisma\\)$')"
+      "Bash(grep -E '\\\\.\\(ts|tsx|sql|prisma\\)$')",
+      "Bash(git remote *)",
+      "Bash(git fetch *)",
+      "Bash(grep -E '\\\\.\\(ts|tsx|js|jsx|json\\)$')"
     ]
   }
 }

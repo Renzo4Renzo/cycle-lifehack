@@ -4,6 +4,8 @@ import { supabaseServer } from "@/lib/supabase"
 import { getCategories } from "@/lib/categories"
 import type { BlockState } from "@/lib/types"
 
+const ALLOWED_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif"])
+
 interface ItemInput {
   name: string
   imagePath: string | null
@@ -28,7 +30,8 @@ async function upsertCycleItems(
     let imagePath = items[ii].imagePath
     const imageFile = formData.get(`image_${ci}_${ii}`) as File | null
     if (imageFile && imageFile.size > 0) {
-      const ext = imageFile.name.split(".").pop() ?? "jpg"
+      const rawExt = imageFile.name.split(".").pop()?.toLowerCase() ?? ""
+      const ext = ALLOWED_IMAGE_EXTENSIONS.has(rawExt) ? rawExt : "jpg"
       const path = `${blockId}/${cycleId}/${Date.now()}-${ii}.${ext}`
       const { error } = await db.storage
         .from("cycle-images")
